@@ -76,15 +76,17 @@ export default function Profile() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error('Usuário não autenticado');
 
-            // Save to database
+            // Save to database (Upsert guarantees row creation if missing)
             const { error } = await supabase
                 .from('users')
-                .update({
+                .upsert({
+                    id: user.id,
+                    name: user.user_metadata?.full_name || userName || 'Herói',
+                    email: user.email || '',
                     phone_number: phoneNumber,
                     whatsapp_reminders_active: remindersActive,
                     whatsapp_reminder_time: reminderTime
-                })
-                .eq('id', user.id);
+                });
 
             if (error) throw error;
 
@@ -162,7 +164,12 @@ export default function Profile() {
                     const { data: { user } } = await supabase.auth.getUser();
                     if (!user) throw new Error("Não autenticado");
 
-                    const { error } = await supabase.from('users').update({ avatar_url: base64String }).eq('id', user.id);
+                    const { error } = await supabase.from('users').upsert({
+                        id: user.id,
+                        name: user.user_metadata?.full_name || userName || 'Herói',
+                        email: user.email || '',
+                        avatar_url: base64String
+                    });
                     if (error) throw error;
                     toast.success('Foto de perfil atualizada!');
                 } catch (err: any) {
