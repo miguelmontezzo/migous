@@ -1,4 +1,5 @@
 {
+    "outputDirectory": "webapp/dist",
     "rewrites": [
         {
             "source": "/(.*)",
