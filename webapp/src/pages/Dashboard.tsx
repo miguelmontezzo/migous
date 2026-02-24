@@ -4,7 +4,7 @@ import TaskCard from '../components/TaskCard';
 import { Heart, Star, Coins } from 'lucide-react';
 
 export default function Dashboard() {
-    const { stats, routines, completeRoutine, failRoutine } = useStore();
+    const { stats, routines, todayCompletions, completeRoutine, failRoutine } = useStore();
 
     // Calculate level threshold based on formula in store
     const maxXp = Math.floor(100 * Math.pow(1.5, stats.level - 1));
@@ -52,6 +52,10 @@ export default function Dashboard() {
                             title={routine.title}
                             type={routine.type}
                             difficulty={routine.difficulty}
+                            habitType={routine.habitType}
+                            isPomodoro={routine.isPomodoro}
+                            pomodoroTime={routine.pomodoroTime}
+                            executionCount={todayCompletions[routine.id] || 0}
                             onComplete={() => completeRoutine(routine.id)}
                             onFail={routine.type === 'habit' ? () => failRoutine(routine.id) : undefined}
                         />

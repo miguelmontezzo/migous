@@ -15,6 +15,7 @@ interface TaskCardProps {
     onDelete?: () => void;
     isPomodoro?: boolean;
     pomodoroTime?: number;
+    executionCount?: number;
 }
 
 const typeMap: Record<string, string> = {
@@ -30,7 +31,7 @@ const diffColors: Record<string, string> = {
     epic: 'var(--secondary)' // iOS Indigo
 };
 
-export default function TaskCard({ title, type, difficulty, habitType, onComplete, onFail, onEdit, onDelete, isPomodoro, pomodoroTime }: TaskCardProps) {
+export default function TaskCard({ title, type, difficulty, habitType, onComplete, onFail, onEdit, onDelete, isPomodoro, pomodoroTime, executionCount = 0 }: TaskCardProps) {
     const [isPomodoroActive, setIsPomodoroActive] = useState(false);
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isRevealed, setIsRevealed] = useState(false);
@@ -122,7 +123,21 @@ export default function TaskCard({ title, type, difficulty, habitType, onComplet
 
                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div className="task-info">
-                        <h4 className="task-title">{title}</h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <h4 className="task-title">{title}</h4>
+                            {executionCount > 0 && (
+                                <span style={{
+                                    background: 'var(--credits-color)',
+                                    color: '#1C1C1E',
+                                    fontSize: '0.65rem',
+                                    padding: '2px 6px',
+                                    borderRadius: '12px',
+                                    fontWeight: 700
+                                }}>
+                                    {executionCount}x hoje
+                                </span>
+                            )}
+                        </div>
                         <div className="task-meta">
                             <span className="task-type">{typeMap[type] || type}</span>
                             <span className="task-difficulty" style={{ color: diffColors[difficulty] }}>

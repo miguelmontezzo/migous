@@ -14,12 +14,14 @@ const navItems = [
 ];
 
 export default function Layout() {
-  const { stats, runDailyCheck, fetchUserStats } = useStore();
+  const { stats, runDailyCheck, fetchUserStats, fetchRoutines, fetchShopAndInventory } = useStore();
 
   useEffect(() => {
     runDailyCheck();
     fetchUserStats();
-  }, [runDailyCheck, fetchUserStats]);
+    fetchRoutines();
+    fetchShopAndInventory();
+  }, [runDailyCheck, fetchUserStats, fetchRoutines, fetchShopAndInventory]);
 
   return (
     <div className="app-container">

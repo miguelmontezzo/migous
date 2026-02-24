@@ -47,6 +47,7 @@ export interface GameState {
     inventory: InventoryItem[];
     lastUpdateDate: string;
     pendingDailiesToReview: Routine[];
+    todayCompletions: Record<string, number>;
     isLoading: boolean;
 
     // Actions
@@ -59,6 +60,9 @@ export interface GameState {
     deleteRoutine: (id: string) => Promise<void>;
     runDailyCheck: () => void;
     resolvePendingDailies: (completedIds: string[]) => void;
+
+    // Data Sync
+    fetchShopAndInventory: () => Promise<void>;
 
     // Economy
     createShopItem: (item: Omit<ShopItem, 'id'>) => void;
@@ -92,11 +96,9 @@ export const useStore = create<GameState>()(
             pendingDailiesToReview: [],
             isLoading: false,
             routines: [],
-            shopItems: [
-                { id: 's1', name: '1h de Série', description: 'Assista a um episódio', cost: 20 },
-                { id: 's2', name: 'Delivery Favorito', description: 'Pode pedir hambúrguer =)', cost: 150 }
-            ],
+            shopItems: [],
             inventory: [],
+            todayCompletions: {},
 
             fetchUserStats: async () => {
                 try {
@@ -132,11 +134,44 @@ export const useStore = create<GameState>()(
 
                     const { data, error } = await supabase.from('routines').select('*').eq('user_id', user.id);
                     if (error) throw error;
-                    if (data) set({ routines: data });
+
+                    const todayDate = new Date().toISOString().split('T')[0];
+                    const { data: logsData } = await supabase.from('routine_logs').select('routine_id').eq('user_id', user.id).eq('date', todayDate).eq('status', 'completed');
+
+                    const completions: Record<string, number> = {};
+                    if (logsData) {
+                        logsData.forEach(log => {
+                            completions[log.routine_id] = (completions[log.routine_id] || 0) + 1;
+                        });
+                    }
+
+                    if (data) set({ routines: data, todayCompletions: completions });
                 } catch (e: any) {
                     toast.error('Erro ao buscar rotinas', { description: e.message });
                 } finally {
                     set({ isLoading: false });
+                }
+            },
+
+            fetchShopAndInventory: async () => {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
+
+                    const { data: shopData } = await supabase.from('shop_items').select('*').eq('user_id', user.id);
+                    const { data: invData } = await supabase.from('inventory').select('id, item_id, quantity, purchased_at').eq('user_id', user.id);
+
+                    const finalShop = shopData || [];
+                    const finalInv = (invData || []).map((inv: any) => ({
+                        id: inv.id,
+                        item: finalShop.find(s => s.id === inv.item_id) as ShopItem,
+                        quantity: inv.quantity,
+                        purchasedAt: inv.purchased_at
+                    })).filter(i => i.item); // Remove if item got deleted
+
+                    set({ shopItems: finalShop, inventory: finalInv });
+                } catch (e: any) {
+                    console.error('Error fetching shop and inventory:', e);
                 }
             },
 
@@ -253,7 +288,11 @@ export const useStore = create<GameState>()(
                             hp: newHp,
                             credits: newCredits
                         },
-                        routines: state.routines.map(r => r.id === id ? { ...r, completedAt: completedDate } : r)
+                        routines: state.routines.map(r => r.id === id ? { ...r, completedAt: completedDate } : r),
+                        todayCompletions: {
+                            ...state.todayCompletions,
+                            [id]: (state.todayCompletions[id] || 0) + 1
+                        }
                     }));
                 } catch (error: any) {
                     toast.error('Falha ao sincronizar online', { description: error.message });
@@ -382,58 +421,121 @@ export const useStore = create<GameState>()(
                 };
             }),
 
-            createShopItem: (item) => set((state) => ({ shopItems: [...state.shopItems, { ...item, id: Math.random().toString() }] })),
+            createShopItem: async (item) => {
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) return;
 
-            editShopItem: (id, partialData) => set((state) => {
-                const newShopItems = state.shopItems.map(i => i.id === id ? { ...i, ...partialData } : i);
-                return { shopItems: newShopItems };
-            }),
+                    const newItem = { ...item, user_id: user.id, type: item.type || 'consumable' };
+                    const { data, error } = await supabase.from('shop_items').insert([newItem]).select().single();
+                    if (error) throw error;
 
-            deleteShopItem: (id) => set((state) => ({
-                shopItems: state.shopItems.filter(i => i.id !== id)
-            })),
+                    set((state) => ({ shopItems: [...state.shopItems, data] }));
+                } catch (e: any) {
+                    toast.error('Erro ao criar item', { description: e.message });
+                }
+            },
 
-            buyItem: (itemId) => set((state) => {
+            editShopItem: async (id, partialData) => {
+                try {
+                    const { error } = await supabase.from('shop_items').update(partialData).eq('id', id);
+                    if (error) throw error;
+                    set((state) => ({ shopItems: state.shopItems.map(i => i.id === id ? { ...i, ...partialData } : i) }));
+                } catch (e: any) {
+                    toast.error('Erro ao editar item', { description: e.message });
+                }
+            },
+
+            deleteShopItem: async (id) => {
+                try {
+                    const { error } = await supabase.from('shop_items').delete().eq('id', id);
+                    if (error) throw error;
+                    set((state) => ({ shopItems: state.shopItems.filter(i => i.id !== id) }));
+                } catch (e: any) {
+                    toast.error('Erro ao deletar item', { description: e.message });
+                }
+            },
+
+            buyItem: async (itemId) => {
+                const state = useStore.getState();
                 const item = state.shopItems.find(i => i.id === itemId);
-                if (!item || state.stats.credits < item.cost) return state;
+                if (!item || state.stats.credits < item.cost) return;
+
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
 
                 const newCredits = state.stats.credits - item.cost;
                 const exists = state.inventory.find(i => i.item.id === itemId);
 
-                // If stock exists, handle it here usually. We'll simplify for now.
-                let newInventory = [...state.inventory];
+                try {
+                    let newInvItem;
+                    if (exists) {
+                        const { data, error } = await supabase.from('inventory').update({ quantity: exists.quantity + 1 }).eq('id', exists.id).select().single();
+                        if (error) throw error;
+                        newInvItem = { ...exists, quantity: data.quantity };
+                    } else {
+                        const { data, error } = await supabase.from('inventory').insert([{ user_id: user.id, item_id: itemId, quantity: 1 }]).select().single();
+                        if (error) throw error;
+                        newInvItem = { id: data.id, item, quantity: data.quantity, purchasedAt: data.purchased_at };
+                    }
 
-                if (exists) {
-                    exists.quantity += 1;
-                } else {
-                    newInventory.push({
-                        id: Math.random().toString(),
-                        item,
-                        quantity: 1,
-                        purchasedAt: new Date().toISOString()
+                    // Sync credits decrement with users table
+                    await supabase.from('users').update({ credits: newCredits }).eq('id', user.id);
+
+                    set((state) => {
+                        let updatedInv = [...state.inventory];
+                        if (exists) {
+                            updatedInv = updatedInv.map(i => i.id === exists.id ? newInvItem : i);
+                        } else {
+                            updatedInv.push(newInvItem);
+                        }
+                        return {
+                            stats: { ...state.stats, credits: newCredits },
+                            inventory: updatedInv
+                        };
                     });
+
+                    toast.success('Compra realizada!', { description: `${item.name} foi adicionado à mochila.` });
+                } catch (e: any) {
+                    toast.error('Erro na compra', { description: e.message });
                 }
+            },
 
-                return {
-                    stats: { ...state.stats, credits: newCredits },
-                    inventory: newInventory
-                };
-            }),
-
-            useInventoryItem: (invId) => set((state) => {
+            useInventoryItem: async (invId) => {
+                const state = useStore.getState();
                 const invItem = state.inventory.find(i => i.id === invId);
-                if (!invItem || invItem.quantity <= 0) return state;
+                if (!invItem || invItem.quantity <= 0) return;
 
-                let newInventory = [...state.inventory];
-                const index = newInventory.findIndex(i => i.id === invId);
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return;
 
-                newInventory[index].quantity -= 1;
-                if (newInventory[index].quantity <= 0) {
-                    newInventory.splice(index, 1);
+                const newQuantity = invItem.quantity - 1;
+
+                try {
+                    if (newQuantity <= 0) {
+                        await supabase.from('inventory').delete().eq('id', invId);
+                    } else {
+                        await supabase.from('inventory').update({ quantity: newQuantity }).eq('id', invId);
+                    }
+
+                    // Optional: Log usage into inventory_usage
+                    await supabase.from('inventory_usage').insert([{ inventory_id: invId, user_id: user.id }]);
+
+                    set((state) => {
+                        let newInventory = [...state.inventory];
+                        if (newQuantity <= 0) {
+                            newInventory = newInventory.filter(i => i.id !== invId);
+                        } else {
+                            newInventory = newInventory.map(i => i.id === invId ? { ...i, quantity: newQuantity } : i);
+                        }
+                        return { inventory: newInventory };
+                    });
+
+                    toast.success(`Usou ${invItem.item.name}!`);
+                } catch (e: any) {
+                    toast.error('Erro ao usar item', { description: e.message });
                 }
-
-                return { inventory: newInventory };
-            })
+            }
         }),
         {
             name: 'lifeforge-storage',

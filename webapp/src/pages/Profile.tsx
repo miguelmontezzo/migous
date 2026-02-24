@@ -13,6 +13,8 @@ export default function Profile() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [theme, setTheme] = useState(document.documentElement.getAttribute('data-theme') || 'dark');
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string>('Seu Avatar');
 
     const toggleTheme = () => {
         const newTheme = theme === 'dark' ? 'light' : 'dark';
@@ -23,6 +25,7 @@ export default function Profile() {
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
+        localStorage.removeItem('lifeforge-storage'); // Impeça que dados fiquem visíveis para outros usuários
         window.location.reload();
     };
 
@@ -31,6 +34,11 @@ export default function Profile() {
             try {
                 const { data: { user } } = await supabase.auth.getUser();
                 if (!user) return;
+
+                if (user.user_metadata) {
+                    setUserName(user.user_metadata.full_name || 'Herói Desconhecido');
+                    setAvatarUrl(user.user_metadata.avatar_url || null);
+                }
 
                 const { data, error } = await supabase
                     .from('users')
@@ -97,13 +105,67 @@ export default function Profile() {
         }
     };
 
+    const getBorderColorByLevel = (level: number) => {
+        if (level < 5) return '#cd7f32'; // Bronze
+        if (level < 15) return '#c0c0c0'; // Prata
+        if (level < 30) return '#ffd700'; // Ouro
+        if (level < 50) return '#e5e4e2'; // Platina
+        return '#00bfff'; // Diamante
+    };
+
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Ensure small file size to prevent 5MB metadata limit blocking
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('A imagem deve ter menos de 2MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+            const base64String = reader.result as string;
+            setAvatarUrl(base64String);
+
+            try {
+                const { error } = await supabase.auth.updateUser({
+                    data: { avatar_url: base64String }
+                });
+                if (error) throw error;
+                toast.success('Foto de perfil atualizada!');
+            } catch (err: any) {
+                toast.error('Erro ao salvar imagem', { description: err.message });
+            }
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <div className="profile-page">
             <div className="profile-header">
-                <div className="avatar-circle">
-                    <User size={64} color="var(--primary)" />
+                <div
+                    className="avatar-circle"
+                    style={{
+                        border: `4px solid ${getBorderColorByLevel(stats.level)}`,
+                        backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'none',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        position: 'relative',
+                        boxShadow: `0 0 15px ${getBorderColorByLevel(stats.level)}80`
+                    }}
+                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                >
+                    {!avatarUrl && <User size={48} color="var(--primary)" />}
+                    <input
+                        type="file"
+                        id="avatar-upload"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={handleAvatarUpload}
+                    />
                 </div>
-                <h2>Seu Avatar</h2>
+                <h2>{userName}</h2>
                 <p className="level-text">Nível {stats.level}</p>
             </div>
 

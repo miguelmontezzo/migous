@@ -14,7 +14,7 @@ const DAYS_OF_WEEK = [
 ];
 
 export default function Routines() {
-    const { routines, addRoutine, editRoutine, deleteRoutine, completeRoutine, failRoutine, fetchRoutines, isLoading } = useStore();
+    const { routines, isLoading, todayCompletions, addRoutine, editRoutine, deleteRoutine, completeRoutine, failRoutine, fetchRoutines } = useStore();
     const [isAdding, setIsAdding] = useState(false);
 
     useEffect(() => {
@@ -196,7 +196,7 @@ export default function Routines() {
                 {isLoading && <p className="empty-text">Carregando...</p>}
                 {!isLoading && dailies.length === 0 && <p className="empty-text">Nenhuma diária cadastrada.</p>}
                 {!isLoading && dailies.map((r: Routine) => (
-                    <TaskCard key={r.id} {...r} onComplete={() => completeRoutine(r.id)} onEdit={() => handleEdit(r)} onDelete={() => deleteRoutine(r.id)} />
+                    <TaskCard key={r.id} {...r} executionCount={todayCompletions[r.id] || 0} onComplete={() => completeRoutine(r.id)} onEdit={() => handleEdit(r)} onDelete={() => deleteRoutine(r.id)} />
                 ))}
             </div>
 
@@ -204,7 +204,7 @@ export default function Routines() {
                 <h3>Hábitos</h3>
                 {habits.length === 0 && <p className="empty-text">Nenhum hábito cadastrado.</p>}
                 {habits.map((r: Routine) => (
-                    <TaskCard key={r.id} {...r} onComplete={() => completeRoutine(r.id)} onFail={() => failRoutine(r.id)} onEdit={() => handleEdit(r)} onDelete={() => deleteRoutine(r.id)} />
+                    <TaskCard key={r.id} {...r} executionCount={todayCompletions[r.id] || 0} onComplete={() => completeRoutine(r.id)} onFail={() => failRoutine(r.id)} onEdit={() => handleEdit(r)} onDelete={() => deleteRoutine(r.id)} />
                 ))}
             </div>
 
