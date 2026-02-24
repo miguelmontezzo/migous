@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useOutletContext } from 'react-router-dom';
 import { LayoutDashboard, CheckSquare, ShoppingBag, Backpack, User, Heart, Star, Coins } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import DailyCheckinModal from './DailyCheckinModal';
+import type { Session } from '@supabase/supabase-js';
 import './Layout.css';
 
 const navItems = [
@@ -14,14 +15,17 @@ const navItems = [
 ];
 
 export default function Layout() {
+  const { session } = useOutletContext<{ session: Session }>();
   const { stats, runDailyCheck, fetchUserStats, fetchRoutines, fetchShopAndInventory } = useStore();
 
   useEffect(() => {
-    runDailyCheck();
-    fetchUserStats();
-    fetchRoutines();
-    fetchShopAndInventory();
-  }, [runDailyCheck, fetchUserStats, fetchRoutines, fetchShopAndInventory]);
+    if (session?.user?.id) {
+      runDailyCheck();
+      fetchUserStats(session.user.id);
+      fetchRoutines(session.user.id);
+      fetchShopAndInventory(session.user.id);
+    }
+  }, [session, runDailyCheck, fetchUserStats, fetchRoutines, fetchShopAndInventory]);
 
   return (
     <div className="app-container">

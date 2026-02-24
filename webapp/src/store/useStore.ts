@@ -51,8 +51,8 @@ export interface GameState {
     isLoading: boolean;
 
     // Actions
-    fetchUserStats: () => Promise<void>;
-    fetchRoutines: () => Promise<void>;
+    fetchUserStats: (userId: string) => Promise<void>;
+    fetchRoutines: (userId: string) => Promise<void>;
     completeRoutine: (id: string) => Promise<void>;
     failRoutine: (id: string) => Promise<void>;
     addRoutine: (routine: Omit<Routine, 'id'>) => Promise<void>;
@@ -62,7 +62,7 @@ export interface GameState {
     resolvePendingDailies: (completedIds: string[]) => void;
 
     // Data Sync
-    fetchShopAndInventory: () => Promise<void>;
+    fetchShopAndInventory: (userId: string) => Promise<void>;
 
     // Economy
     createShopItem: (item: Omit<ShopItem, 'id'>) => void;
@@ -100,12 +100,9 @@ export const useStore = create<GameState>()(
             inventory: [],
             todayCompletions: {},
 
-            fetchUserStats: async () => {
+            fetchUserStats: async (userId: string) => {
                 try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-
-                    const { data, error } = await supabase.from('users').select('hp, xp, level, credits, streak').eq('id', user.id).single();
+                    const { data, error } = await supabase.from('users').select('hp, xp, level, credits, streak').eq('id', userId).single();
                     if (error) throw error;
 
                     if (data) {
@@ -126,17 +123,14 @@ export const useStore = create<GameState>()(
                 }
             },
 
-            fetchRoutines: async () => {
+            fetchRoutines: async (userId: string) => {
                 set({ isLoading: true });
                 try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) throw new Error("Usuário não autenticado");
-
-                    const { data, error } = await supabase.from('routines').select('*').eq('user_id', user.id);
+                    const { data, error } = await supabase.from('routines').select('*').eq('user_id', userId);
                     if (error) throw error;
 
                     const todayDate = new Date().toISOString().split('T')[0];
-                    const { data: logsData } = await supabase.from('routine_logs').select('routine_id').eq('user_id', user.id).eq('date', todayDate).eq('status', 'completed');
+                    const { data: logsData } = await supabase.from('routine_logs').select('routine_id').eq('user_id', userId).eq('date', todayDate).eq('status', 'completed');
 
                     const completions: Record<string, number> = {};
                     if (logsData) {
@@ -153,13 +147,10 @@ export const useStore = create<GameState>()(
                 }
             },
 
-            fetchShopAndInventory: async () => {
+            fetchShopAndInventory: async (userId: string) => {
                 try {
-                    const { data: { user } } = await supabase.auth.getUser();
-                    if (!user) return;
-
-                    const { data: shopData } = await supabase.from('shop_items').select('*').eq('user_id', user.id);
-                    const { data: invData } = await supabase.from('inventory').select('id, item_id, quantity, purchased_at').eq('user_id', user.id);
+                    const { data: shopData } = await supabase.from('shop_items').select('*').eq('user_id', userId);
+                    const { data: invData } = await supabase.from('inventory').select('id, item_id, quantity, purchased_at').eq('user_id', userId);
 
                     const finalShop = shopData || [];
                     const finalInv = (invData || []).map((inv: any) => ({
