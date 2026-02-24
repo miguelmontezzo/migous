@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useStore, type Routine } from '../store/useStore';
 import TaskCard from '../components/TaskCard';
 import './Routines.css';
@@ -14,12 +14,9 @@ const DAYS_OF_WEEK = [
 ];
 
 export default function Routines() {
-    const { routines, isLoading, todayCompletions, addRoutine, editRoutine, deleteRoutine, completeRoutine, failRoutine, fetchRoutines } = useStore();
+    const { routines, isLoading, todayCompletions, addRoutine, editRoutine, deleteRoutine, completeRoutine, failRoutine } = useStore();
     const [isAdding, setIsAdding] = useState(false);
 
-    useEffect(() => {
-        fetchRoutines();
-    }, [fetchRoutines]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [newRoutine, setNewRoutine] = useState<Partial<Routine>>({
         title: '',
