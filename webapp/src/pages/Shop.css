@@ -1,0 +1,83 @@
+.shop-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.credits-display {
+    color: var(--credits-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 4px;
+}
+
+.shop-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+.shop-card {
+    background: var(--bg-card);
+    border: 0.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.shop-card-info h4 {
+    color: var(--text-main);
+    margin-bottom: 4px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+}
+
+.shop-card-info p {
+    font-size: 0.8rem;
+    margin-bottom: 8px;
+    color: var(--text-muted);
+}
+
+.type-badge {
+    font-size: 0.65rem;
+    background: var(--bg-main);
+    padding: 4px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+    border: 0.5px solid var(--border-color);
+}
+
+.buy-btn {
+    background: rgba(255, 149, 0, 0.15);
+    /* Orange but softer */
+    border: none;
+    color: var(--credits-color);
+    padding: 8px 16px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 700;
+    transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.buy-btn:not(.disabled):hover,
+.buy-btn:not(.disabled):active {
+    background: var(--credits-color);
+    color: white;
+    /* iOS uses white usually inside solid filled buttons */
+    transform: scale(0.95);
+}
+
+.buy-btn.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-main);
+    color: var(--text-muted);
+}

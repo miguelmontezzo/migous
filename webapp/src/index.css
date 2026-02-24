@@ -1,0 +1,197 @@
+:root {
+  /* Gamification Theme based on references */
+  --bg-main: #1C1C23;
+  /* Darker slate for readability */
+  --bg-card: #272730;
+  --bg-card-hover: #32323C;
+
+  --primary: #CEEF88;
+  --primary-glow: rgba(206, 239, 136, 0.4);
+  --secondary: #F4C7C9;
+
+  --text-main: #FFFFFF;
+  --text-muted: rgba(255, 255, 255, 0.85);
+  /* Increased opacity for better contrast */
+  --text-inverse: #16161B;
+
+  /* Status Colors */
+  --hp-color: #FF453A;
+  --hp-bg: rgba(255, 69, 58, 0.2);
+  --xp-color: var(--primary);
+  --xp-bg: var(--primary-glow);
+
+  --credits-color: #FF9F0A;
+
+  /* Layout */
+  --nav-height: 83px;
+  --header-height: 60px;
+
+  /* Aesthetics */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --border-color: rgba(255, 255, 255, 0.1);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-neon: 0 0 15px var(--primary-glow);
+
+  /* Blurs & Glass */
+  --glass-bg: rgba(22, 22, 27, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  /* Global Safe Area Support */
+  --sat: env(safe-area-inset-top);
+  --sab: env(safe-area-inset-bottom);
+}
+
+:root[data-theme="light"] {
+  --bg-main: #F2F2F7;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #E5E5EA;
+
+  --primary: #34C759;
+  --primary-glow: rgba(52, 199, 89, 0.2);
+  --secondary: #FF2D55;
+
+  --text-main: #1C1C1E;
+  --text-muted: rgba(60, 60, 67, 0.7);
+  --text-inverse: #FFFFFF;
+
+  --hp-color: #FF3B30;
+  --hp-bg: rgba(255, 59, 48, 0.1);
+  --xp-color: var(--primary);
+  --xp-bg: var(--primary-glow);
+
+  --credits-color: #FF9500;
+
+  --border-color: rgba(0, 0, 0, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Keep it identical for dark mode so the theme is consistent */
+    --bg-main: #1C1C23;
+    --bg-card: #272730;
+    --bg-card-hover: #32323C;
+
+    --primary: #CEEF88;
+    --primary-glow: rgba(206, 239, 136, 0.4);
+    --secondary: #F4C7C9;
+
+    --text-main: #FFFFFF;
+    --text-muted: rgba(255, 255, 255, 0.85);
+    --text-inverse: #16161B;
+
+    --hp-color: #FF453A;
+    --hp-bg: rgba(255, 69, 58, 0.2);
+    --xp-color: var(--primary);
+    --xp-bg: var(--primary-glow);
+
+    --credits-color: #FF9F0A;
+
+    --border-color: rgba(255, 255, 255, 0.1);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+    --glass-bg: rgba(22, 22, 27, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.05);
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  /* Removes blue highlight on iOS click */
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile App Constraint - Centers the app on large screens but acts as native app on mobile */
+#root {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #000;
+}
+
+.app-container {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-main);
+  min-height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+  color: var(--text-main);
+}
+
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  /* Add safe area insets logic */
+  padding: calc(var(--header-height) + var(--sat, 0px) + 32px) 16px calc(var(--nav-height) + max(20px, var(--sab, 20px))) 16px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  /* Momentum scrolling on iOS */
+}
+
+/* Typography Utility */
+h1,
+h2,
+h3,
+h4 {
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+p {
+  color: var(--text-muted);
+}
+
+/* Buttons & Inputs Resets */
+button {
+  border: none;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+  color: inherit;
+  outline: none;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 16px;
+  /* Prevents auto-zoom on iOS */
+}

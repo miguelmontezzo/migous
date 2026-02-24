@@ -1,0 +1,124 @@
+.task-card {
+    background-color: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-left: 4px solid var(--primary);
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--border-color);
+    border-left-width: 4px;
+    /* Ensure left border override */
+    transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), background-color 0.2s ease;
+}
+
+.task-card:active {
+    transform: scale(0.97);
+    background-color: var(--bg-card-hover);
+}
+
+.task-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.task-title {
+    color: var(--text-main);
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: -0.3px;
+}
+
+.task-meta {
+    display: flex;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.task-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-action {
+    color: var(--text-muted);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-action.complete {
+    color: var(--xp-color);
+    /* Apple Green */
+    opacity: 0.7;
+}
+
+.btn-action.complete:hover,
+.btn-action.complete:active {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.btn-action.fail {
+    color: var(--hp-color);
+    /* Apple Red */
+    opacity: 0.7;
+}
+
+.btn-action.fail:hover,
+.btn-action.fail:active {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.task-card-wrapper {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 12px;
+    border-radius: var(--radius-md);
+    background-color: var(--bg-card-hover);
+}
+
+.task-card-drawer {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 120px;
+    display: flex;
+    z-index: 0;
+    overflow: hidden;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.drawer-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    color: white;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.drawer-btn:active {
+    filter: brightness(0.8);
+}
+
+.drawer-btn.edit {
+    background-color: var(--credits-color);
+    /* Orange */
+}
+
+.drawer-btn.delete {
+    background-color: var(--hp-color);
+    /* Red */
+}

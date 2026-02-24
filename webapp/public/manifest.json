@@ -1,0 +1,17 @@
+{
+    "name": "Migous",
+    "short_name": "Migous",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#1C1C23",
+    "theme_color": "#CEEF88",
+    "description": "Transforme sua rotina em uma jornada épica.",
+    "icons": [
+        {
+            "src": "/migouslogo.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

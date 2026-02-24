@@ -1,0 +1,76 @@
+.pomodoro-container {
+    width: 100%;
+    margin-top: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.pomodoro-progress-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 0;
+}
+
+.pomodoro-progress-fill {
+    height: 100%;
+    background: var(--primary-glow);
+    transition: width 1s linear;
+}
+
+.pomodoro-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+}
+
+.pomodoro-time {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 8px rgba(206, 239, 136, 0.5);
+}
+
+.pomodoro-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pomodoro-controls .btn-icon {
+    background: var(--bg-card);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--border-color);
+}
+
+.pomodoro-controls .btn-icon:hover {
+    background: var(--bg-card-hover);
+    color: var(--primary);
+}
+
+.pomodoro-controls .btn-text.cancel {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.pomodoro-controls .btn-text.cancel:hover {
+    color: var(--hp-color);
+}

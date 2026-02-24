@@ -1,0 +1,3 @@
+ALTER TABLE routines ADD COLUMN "habitType" TEXT;
+ALTER TABLE routines ADD COLUMN "isPomodoro" BOOLEAN DEFAULT false;
+ALTER TABLE routines ADD COLUMN "pomodoroTime" INTEGER DEFAULT 25;
