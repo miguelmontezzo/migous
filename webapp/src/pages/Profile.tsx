@@ -37,12 +37,16 @@ export default function Profile() {
 
                 if (user.user_metadata) {
                     setUserName(user.user_metadata.full_name || 'Herói Desconhecido');
-                    setAvatarUrl(user.user_metadata.avatar_url || null);
+
+                    // One-time rescue: Wipe huge corrupted Base64 avatar URLs from JWT token to restore RLS access
+                    if (user.user_metadata.avatar_url && user.user_metadata.avatar_url.length > 2000) {
+                        await supabase.auth.updateUser({ data: { avatar_url: null } });
+                    }
                 }
 
                 const { data, error } = await supabase
                     .from('users')
-                    .select('phone_number, whatsapp_reminders_active, whatsapp_reminder_time')
+                    .select('phone_number, whatsapp_reminders_active, whatsapp_reminder_time, avatar_url')
                     .eq('id', user.id)
                     .single();
 
@@ -52,8 +56,9 @@ export default function Profile() {
 
                 if (data) {
                     setPhoneNumber(data.phone_number || '');
-                    setRemindersActive(data.whatsapp_reminders_active || false);
+                    setRemindersActive(data.whatsapp_reminders_active);
                     setReminderTime(data.whatsapp_reminder_time || '09:00');
+                    setAvatarUrl(data.avatar_url || null);
                 }
             } catch (err) {
                 console.error(err);
@@ -117,26 +122,54 @@ export default function Profile() {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Ensure small file size to prevent 5MB metadata limit blocking
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('A imagem deve ter menos de 2MB');
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('A imagem deve ter menos de 5MB');
             return;
         }
 
         const reader = new FileReader();
         reader.onloadend = async () => {
-            const base64String = reader.result as string;
-            setAvatarUrl(base64String);
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 200;
+                const MAX_HEIGHT = 200;
+                let width = img.width;
+                let height = img.height;
 
-            try {
-                const { error } = await supabase.auth.updateUser({
-                    data: { avatar_url: base64String }
-                });
-                if (error) throw error;
-                toast.success('Foto de perfil atualizada!');
-            } catch (err: any) {
-                toast.error('Erro ao salvar imagem', { description: err.message });
-            }
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, width, height);
+
+                // Compress severely to avoid Postgres max payload limits
+                const base64String = canvas.toDataURL('image/webp', 0.8);
+                setAvatarUrl(base64String);
+
+                try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) throw new Error("Não autenticado");
+
+                    const { error } = await supabase.from('users').update({ avatar_url: base64String }).eq('id', user.id);
+                    if (error) throw error;
+                    toast.success('Foto de perfil atualizada!');
+                } catch (err: any) {
+                    toast.error('Erro ao salvar imagem', { description: err.message });
+                }
+            };
+            img.src = reader.result as string;
         };
         reader.readAsDataURL(file);
     };

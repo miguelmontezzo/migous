@@ -103,7 +103,30 @@ export const useStore = create<GameState>()(
             fetchUserStats: async (userId: string) => {
                 try {
                     const { data, error } = await supabase.from('users').select('hp, xp, level, credits, streak').eq('id', userId).single();
-                    if (error) throw error;
+                    if (error) {
+                        // Auto-create missing user profile if it doesn't exist (PGRST116: no rows returned)
+                        if (error.code === 'PGRST116') {
+                            const { data: authData } = await supabase.auth.getUser();
+                            const name = authData?.user?.user_metadata?.full_name || 'Herói';
+                            const email = authData?.user?.email || '';
+
+                            const { data: newData, error: insertError } = await supabase
+                                .from('users')
+                                .insert([{ id: userId, name, email }])
+                                .select('hp, xp, level, credits, streak')
+                                .single();
+
+                            if (insertError) throw insertError;
+
+                            if (newData) {
+                                set((state) => ({
+                                    stats: { ...state.stats, ...newData }
+                                }));
+                            }
+                            return;
+                        }
+                        throw error;
+                    }
 
                     if (data) {
                         set((state) => ({
@@ -247,18 +270,11 @@ export const useStore = create<GameState>()(
                 const completedDate = new Date().toISOString();
 
                 try {
-                    // Update routines and logs sequentially to avoid failing partial updates
-                    if (routine.type === 'daily' || routine.type === 'todo') {
-                        await supabase.from('routines').update({ completedAt: completedDate }).eq('id', id);
-                    }
-
-                    await supabase.from('routine_logs').insert([{
-                        routine_id: id,
-                        user_id: user.id,
-                        date: new Date().toISOString().split('T')[0],
-                        status: 'completed'
-                    }]);
-
+                    // Record log in routine_logs efficiently. The column completedAt does NOT exist in routines table.
+                    const todayDate = new Date().toISOString().split('T')[0];
+                    await supabase.from('routine_logs').insert([
+                        { user_id: user.id, routine_id: id, status: 'completed', date: todayDate }
+                    ]);
                     // Sync stats to users table
                     await supabase.from('users').update({
                         xp: finalXp,
@@ -358,8 +374,16 @@ export const useStore = create<GameState>()(
                     r.type === 'daily' ? { ...r, completedAt: undefined } : r
                 );
 
+                // Sync new streak to the cloud immediately to prevent overwrite on next refresh
+                const newStreak = state.stats.streak + 1;
+                supabase.auth.getUser().then(({ data: { user } }) => {
+                    if (user) {
+                        supabase.from('users').update({ streak: newStreak }).eq('id', user.id).then();
+                    }
+                });
+
                 return {
-                    stats: { ...state.stats, streak: state.stats.streak + 1 },
+                    stats: { ...state.stats, streak: newStreak },
                     routines: resetRoutines,
                     lastUpdateDate: new Date().toISOString()
                 };
