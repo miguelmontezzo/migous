@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CheckCircle2, XCircle, Pencil, Trash2, Timer } from 'lucide-react';
+import { CheckCircle2, XCircle, Pencil, Trash2, Timer, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import PomodoroTimer from './PomodoroTimer';
 import './TaskCard.css';
 
@@ -16,6 +16,9 @@ interface TaskCardProps {
     isPomodoro?: boolean;
     pomodoroTime?: number;
     executionCount?: number;
+    isDisabled?: boolean;
+    checklist?: { title: string; completed: boolean }[];
+    onUpdateChecklist?: (newChecklist: { title: string; completed: boolean }[]) => void;
 }
 
 const typeMap: Record<string, string> = {
@@ -31,13 +34,16 @@ const diffColors: Record<string, string> = {
     epic: 'var(--secondary)' // iOS Indigo
 };
 
-export default function TaskCard({ title, type, difficulty, habitType, onComplete, onFail, onEdit, onDelete, isPomodoro, pomodoroTime, executionCount = 0 }: TaskCardProps) {
+export default function TaskCard({ title, type, difficulty, habitType, onComplete, onFail, onEdit, onDelete, isPomodoro, pomodoroTime, executionCount = 0, isDisabled, checklist, onUpdateChecklist }: TaskCardProps) {
     const [isPomodoroActive, setIsPomodoroActive] = useState(false);
     const [swipeOffset, setSwipeOffset] = useState(0);
     const [isRevealed, setIsRevealed] = useState(false);
     const [startX, setStartX] = useState<number | null>(null);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [newSubtask, setNewSubtask] = useState('');
 
     const handleCompleteClick = () => {
+        if (isDisabled) return;
         if (type === 'daily' && isPomodoro) {
             setIsPomodoroActive(true);
         } else {
@@ -114,7 +120,9 @@ export default function TaskCard({ title, type, difficulty, habitType, onComplet
                     transition: startX === null ? 'transform 0.2s ease-out' : 'none',
                     margin: 0,
                     zIndex: 1,
-                    position: 'relative'
+                    position: 'relative',
+                    opacity: isDisabled ? 0.5 : 1,
+                    pointerEvents: isDisabled ? 'none' : 'auto'
                 }}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
@@ -138,7 +146,7 @@ export default function TaskCard({ title, type, difficulty, habitType, onComplet
                                 </span>
                             )}
                         </div>
-                        <div className="task-meta">
+                        <div className="task-meta" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className="task-type">{typeMap[type] || type}</span>
                             <span className="task-difficulty" style={{ color: diffColors[difficulty] }}>
                                 • {difficulty.toUpperCase()}
@@ -148,10 +156,19 @@ export default function TaskCard({ title, type, difficulty, habitType, onComplet
                                     ({habitType === 'positive' ? 'POSITIVO' : 'NEGATIVO'})
                                 </span>
                             )}
+                            {type === 'todo' && onUpdateChecklist && (
+                                <button
+                                    className="expand-btn"
+                                    onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
+                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', marginLeft: 'auto', pointerEvents: 'auto' }}
+                                >
+                                    {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    <div className="task-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '40px' }}>
+                    <div className="task-actions" style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '40px', pointerEvents: isDisabled ? 'none' : 'auto' }}>
                         {type === 'habit' ? (
                             habitType === 'negative' ? (
                                 <button className="btn-action fail" onClick={onFail}>
@@ -180,6 +197,52 @@ export default function TaskCard({ title, type, difficulty, habitType, onComplet
                             }}
                             onCancel={() => setIsPomodoroActive(false)}
                         />
+                    </div>
+                )}
+
+                {isExpanded && type === 'todo' && onUpdateChecklist && (
+                    <div className="checklist-container" style={{ width: '100%', marginTop: '12px', borderTop: '0.5px solid var(--border-color)', paddingTop: '12px', pointerEvents: 'auto' }}>
+                        {(checklist || []).map((item, idx) => (
+                            <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', cursor: 'pointer', opacity: item.completed ? 0.6 : 1, textDecoration: item.completed ? 'line-through' : 'none', color: 'var(--text-color)' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={item.completed}
+                                    style={{ width: '18px', height: '18px', accentColor: 'var(--primary)' }}
+                                    onChange={(e) => {
+                                        const newList = [...(checklist || [])];
+                                        newList[idx].completed = e.target.checked;
+                                        onUpdateChecklist(newList);
+                                    }}
+                                />
+                                {item.title}
+                            </label>
+                        ))}
+                        <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                            <input
+                                type="text"
+                                placeholder="Nova sub-tarefa..."
+                                value={newSubtask}
+                                onChange={(e) => setNewSubtask(e.target.value)}
+                                style={{ flex: 1, padding: '8px', borderRadius: 'var(--radius-md)', background: 'var(--bg-main)', border: '1px solid var(--border-color)', color: 'var(--text-color)' }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && newSubtask.trim()) {
+                                        onUpdateChecklist([...(checklist || []), { title: newSubtask.trim(), completed: false }]);
+                                        setNewSubtask('');
+                                    }
+                                }}
+                            />
+                            <button
+                                onClick={() => {
+                                    if (newSubtask.trim()) {
+                                        onUpdateChecklist([...(checklist || []), { title: newSubtask.trim(), completed: false }]);
+                                        setNewSubtask('');
+                                    }
+                                }}
+                                style={{ background: 'var(--primary)', color: 'var(--text-inverse)', border: 'none', padding: '8px', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            >
+                                <Plus size={20} />
+                            </button>
+                        </div>
                     </div>
                 )}
 

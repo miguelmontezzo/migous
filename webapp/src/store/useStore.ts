@@ -22,6 +22,8 @@ export interface Routine {
     completedAt?: string;
     isPomodoro?: boolean;
     pomodoroTime?: number; // em minutos
+    checklist?: { title: string; completed: boolean }[];
+    active?: boolean;
 }
 
 export interface ShopItem {
@@ -283,6 +285,11 @@ export const useStore = create<GameState>()(
                         credits: newCredits
                     }).eq('id', user.id);
 
+                    // If it is a todo, disable it natively
+                    if (routine.type === 'todo') {
+                        await supabase.from('routines').update({ active: false }).eq('id', id);
+                    }
+
                     toast.success(`+${reward.xp} EXP | +${reward.credits} Créditos`, {
                         description: `Tarefa "${routine.title}" concluída!`
                     });
@@ -295,7 +302,7 @@ export const useStore = create<GameState>()(
                             hp: newHp,
                             credits: newCredits
                         },
-                        routines: state.routines.map(r => r.id === id ? { ...r, completedAt: completedDate } : r),
+                        routines: state.routines.map(r => r.id === id ? { ...r, completedAt: completedDate, active: r.type === 'todo' ? false : r.active } : r),
                         todayCompletions: {
                             ...state.todayCompletions,
                             [id]: (state.todayCompletions[id] || 0) + 1

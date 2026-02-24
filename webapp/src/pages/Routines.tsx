@@ -209,7 +209,16 @@ export default function Routines() {
                 <h3>To-Dos</h3>
                 {todos.length === 0 && <p className="empty-text">Nenhum afazer cadastrado.</p>}
                 {todos.map((r: Routine) => (
-                    <TaskCard key={r.id} {...r} onComplete={() => completeRoutine(r.id)} onEdit={() => handleEdit(r)} onDelete={() => deleteRoutine(r.id)} />
+                    <TaskCard
+                        key={r.id}
+                        {...r}
+                        isDisabled={r.type === 'todo' && r.active === false}
+                        checklist={r.checklist}
+                        onUpdateChecklist={(newList) => editRoutine(r.id, { checklist: newList })}
+                        onComplete={() => completeRoutine(r.id)}
+                        onEdit={() => handleEdit(r)}
+                        onDelete={() => deleteRoutine(r.id)}
+                    />
                 ))}
             </div>
         </div>
